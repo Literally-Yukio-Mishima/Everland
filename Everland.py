@@ -190,22 +190,22 @@ def getCities(pMinPopulation, pLimit=100):
     return df
 
 
-def plot():
-    # Lade die Städte-Daten mit einer Mindestbevölkerung von 100000
-    df_Cities = getCities(10000, 10)
-
+def plot(pLocations):
     # Erstelle eine leere Karte
     m = folium.Map(location=[0, 0], zoom_start=2)
 
+    numberOfItems = len(pLocations)
+
     # Füge für jede Stadt einen Kreismarker hinzu
-    for index, city in df_Cities.iterrows():
-        name = city['name']        
+    for index, city in pLocations.iterrows():
+        name = city['name']
         lat = city['latitude']
         lon = city['longitude']
-
         isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
+
+        #if(checkLivable(lat, lon)):
         if(isStillAboveSeaLevel):
-            print(f"City: {name} is not flooded, its {elevation} above sea level.")
+            print(f"Area: {name} is not flooded, its {elevation} above sea level. [{index}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
                 radius=city['population'] *0.0000001,  # Skaliere den Radius basierend auf der Bevölkerungszahl
@@ -214,7 +214,7 @@ def plot():
                 fill_color='green'
             ).add_to(m)
         else:
-            print(f"City: {name} is flooded, its {elevation} above sea level.")
+            print(f"Area: {name} is flooded, its {elevation} above sea level. [{index}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
                 radius=city['population'] *0.0000001,  # Skaliere den Radius basierend auf der Bevölkerungszahl
@@ -225,19 +225,27 @@ def plot():
 
     # Speichere die Karte als HTML-Datei
     m.save('world_cities_map.html')
-
     m.show_in_browser()
 
 
+def useGeoJson(pFile):
+    # Load GeoJSON file
+    with open(pFile, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    df = pd.DataFrame(columns=['name', 'population', 'latitude', 'longitude'])
+
+    results = data['features']
+    for i in range(len(results)):
+        name = results[i]['properties']['gis_name']
+        pop = 0 #results[i]['properties'].get('population', None)
+        lon = results[i]['geometry']['coordinates'][0]
+        lat = results[i]['geometry']['coordinates'][1]
+
+        df.loc[i] = [name, pop, lat, lon]
+
+    return df
 
 
-
-#cities = ['Berlin', 'Moskau', 'London', 'Bangladesh', 'Wien']
-
-for index, city in getCities(10000).iterrows():
-    #print(f"City: {city['name']}")
-    # lat, long = getCordinates(city)
-    #print(f"is Livable: {checkLivable(lat,long)} \n\n")
-    print("")
-
-plot()
+plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
+#plot(getCities(10000, 10))
