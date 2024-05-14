@@ -6,15 +6,15 @@ from retry_requests import retry
 import statistics
 
 
-allowedDeviationPercentage = 10
+allowedDeviationPercentageOfRain = 30
+allowedDeviationPercentageOfTemp = 10
+allowedDeviationPercentageOfWind = 20
 seaLevelRise = 3
 
 
 def getTopTenMedian(pData):
     topTen = sorted(pData, reverse=True)[:10]
-    median = statistics.median(topTen)
-
-    return round(median, 3)
+    return statistics.median(topTen)
 
 
 # Setup the Open-Meteo API client with cache and retry on error
@@ -68,18 +68,38 @@ def getFutureClimateData(pLat, pLong):
     return temperature_2m_max, precipitation_sum, wind_speed_10m_max
 
 
+def calcPercentageIncrease(pLegacy, pFuture):
+    return ((pFuture - pLegacy) / pLegacy) * 100
+
+
 def checkLivable(pLat, pLong):
+    livable = True
+
     legacy_temperature_2m_max, legacy_precipitation_sum, legacy_wind_speed_10m_max = getLegacyClimateData(pLat, pLong)
     future_temperature_2m_max, future_precipitation_sum, future_wind_speed_10m_max = getFutureClimateData(pLat, pLong)
 
-    if(legacy_precipitation_sum / future_precipitation_sum > allowedDeviationPercentage):
-        return False
-    elif(legacy_temperature_2m_max / future_temperature_2m_max > allowedDeviationPercentage):
-        return False
-    elif(legacy_wind_speed_10m_max / future_wind_speed_10m_max > allowedDeviationPercentage):
-        return False
+    percentrageIncreaseRain = calcPercentageIncrease(legacy_precipitation_sum, future_precipitation_sum)
+    print(f"Percentage Increse of rain: {round(percentrageIncreaseRain, 3)}% / {allowedDeviationPercentageOfRain}%")
 
-    return True
+    percentrageIncreaseTemp = calcPercentageIncrease(legacy_temperature_2m_max, future_temperature_2m_max)
+    print(f"Percentage Increse of temp: {round(percentrageIncreaseTemp, 3)}% / {allowedDeviationPercentageOfTemp}%")
+
+    percentrageIncreaseWind = calcPercentageIncrease(legacy_wind_speed_10m_max, future_wind_speed_10m_max)
+    print(f"Percentage Increse of wind: {round(percentrageIncreaseWind, 3)}% / {allowedDeviationPercentageOfWind}%")
+
+    stillAboveSeaLevel = isStillAboveSeaLevelCords(pLat, pLong)
+    print(f"Still above sea level: {stillAboveSeaLevel}")
+
+    if(percentrageIncreaseRain < (-1)*allowedDeviationPercentageOfRain or percentrageIncreaseRain > allowedDeviationPercentageOfRain):
+        livable = False
+    elif(percentrageIncreaseTemp < (-1)*allowedDeviationPercentageOfTemp or percentrageIncreaseTemp > allowedDeviationPercentageOfTemp):
+        livable = False
+    elif(percentrageIncreaseWind < (-1)*allowedDeviationPercentageOfWind or percentrageIncreaseWind > allowedDeviationPercentageOfWind):
+        livable = False
+    elif(not stillAboveSeaLevel):
+        livable = False
+
+    return livable
 
 
 def getCordinates(pName):
@@ -96,17 +116,20 @@ def getCordinates(pName):
 
 def isStillAboveSeaLevelCords(pLat, pLong):
     url = f"https://api.open-meteo.com/v1/elevation?latitude={pLat}&longitude={pLong}"
-
-    # Eine GET-Anfrage an die API senden
     response = requests.get(url)
 
-    elevation = response.json()['elevation'][0]
-    print(elevation)
-    return (elevation - seaLevelRise > 1)
+    return (response.json()['elevation'][0] - seaLevelRise > 1.0)
 
 
 def isStillAboveSeaLevelElevation(pElevation):
-    return (pElevation - seaLevelRise > 1)
+    diff = pElevation - seaLevelRise
+    return (diff > 1)
 
 
-print(f"is Livable: {checkLivable(24,90)}")
+
+cities = ['Berlin', 'Moskau', 'London', 'Bangladesh', 'Wien']
+
+for city in cities:
+    lat, long = getCordinates(city)
+    print(f"City: {city}")
+    print(f"is Livable: {checkLivable(lat,long)} \n\n")
