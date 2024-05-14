@@ -6,8 +6,8 @@ from retry_requests import retry
 import statistics
 
 
-allowedDeviationPercentageOfRain = 30
-allowedDeviationPercentageOfTemp = 10
+allowedDeviationPercentageOfRain = 50
+allowedDeviationPercentageOfTemp = 20
 allowedDeviationPercentageOfWind = 20
 seaLevelRise = 3
 
