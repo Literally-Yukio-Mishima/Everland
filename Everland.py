@@ -7,12 +7,13 @@ import statistics
 import pandas as pd
 import folium
 from folium.plugins import MarkerCluster
+import time
 
 
 allowedDeviationPercentageOfRain = 50
 allowedDeviationPercentageOfTemp = 20
 allowedDeviationPercentageOfWind = 20
-seaLevelRise = 0.5
+seaLevelRise = 10 #0.5
 
 
 
@@ -127,16 +128,19 @@ def getCordinates(pName):
 
 
 def isStillAboveSeaLevelCords(pLat, pLong):
-    url = f"https://api.open-meteo.com/v1/elevation?latitude={pLat}&longitude={pLong}"
-    response = requests.get(url)
-    elevation = response.json()['elevation'][0]
+    try:
+        url = f"https://api.open-meteo.com/v1/elevation?latitude={pLat}&longitude={pLong}"
+        response = requests.get(url)
+        elevation = response.json()['elevation'][0]
+    except:
+        elevation = 0
+
     return (elevation - seaLevelRise > 1.0), elevation
 
 
 
 def isStillAboveSeaLevelElevation(pElevation):
-    diff = pElevation - seaLevelRise
-    return (diff > 1)
+    return (pElevation - seaLevelRise > 1)
 
 
 
@@ -193,6 +197,7 @@ def getCities(pMinPopulation, pLimit=100):
 def plot(pLocations):
     # Erstelle eine leere Karte
     m = folium.Map(location=[0, 0], zoom_start=2)
+    folium.TileLayer('cartodbpositron').add_to(m)
     
     numberOfItems = len(pLocations)
 
@@ -203,21 +208,21 @@ def plot(pLocations):
         lon = city['longitude']
         isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
 
-        if(checkLivable(lat, lon)):
-        #if(isStillAboveSeaLevel):
-            print(f"Area: {name} is not flooded, its {elevation} above sea level. [{index}/{numberOfItems}]")
+        #if(checkLivable(lat, lon)):
+        if(isStillAboveSeaLevel):
+            print(f"Area '{name}' is still good. [{index+1}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
-                radius=city['population'] *0.0000001,  # Skaliere den Radius basierend auf der Bevölkerungszahl
+                radius=city['population'] *0.0000001,
                 color='green',
                 fill=True,
                 fill_color='green'
             ).add_to(m)
         else:
-            print(f"Area: {name} is flooded, its {elevation} above sea level. [{index}/{numberOfItems}]")
+            print(f"Area '{name}' wont be good [{index+1}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
-                radius=city['population'] *0.0000001,  # Skaliere den Radius basierend auf der Bevölkerungszahl
+                radius=city['population'] *0.0000001,
                 color='red',
                 fill=True,
                 fill_color='red'
@@ -247,5 +252,73 @@ def useGeoJson(pFile):
     return df
 
 
+def bruteforceElevation(pLat, pLong):
+    url = f"https://api.open-elevation.com/api/v1/lookup?locations={pLat},{pLong}"
+    response = requests.get(url).json()
+
+    return response['results'][0]['elevation']
+
+
+def bruteforceCoordiantes(pSteps, pSleep=0):
+    df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
+
+    index = 0
+    for i in range(-90, 90, pSteps): # latitude
+        for j in range(-180, 180, pSteps): # longitude
+            print(f"Status: {index} / {(180 / pSteps) * (360 / pSteps)}")
+            
+            elevation = bruteforceElevation(i, j)
+            if(elevation == 0):
+                above = True
+            else:
+                above = isStillAboveSeaLevelElevation(elevation)
+            
+            df.loc[index] = [i, j, above, elevation]
+            index +=1
+            time.sleep(pSleep)
+
+    print(df)
+    jsonData = df.to_json(orient='records')
+
+    with open('data.json', 'w') as f:
+        f.write(jsonData)
+
+    m = folium.Map(location=[0, 0], zoom_start=2)
+    folium.TileLayer('cartodbpositron').add_to(m)
+
+    numberOfItems = len(df)
+
+    # Füge für jede Stadt einen Kreismarker hinzu
+    for index, city in df.iterrows():
+        lat = city['latitude']
+        lon = city['longitude']
+
+        if(city['elevation'] != 0):
+            if not(city['aboveSea']):
+                #print(f"Area [{lat / lon}] wont be good [{index+1}/{numberOfItems}]")
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=1,
+                    color='red',
+                    fill=True,
+                    fill_color='red'
+                ).add_to(m)
+            else:
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=1,
+                    color='green',
+                    fill=True,
+                    fill_color='green'
+                ).add_to(m)
+
+
+    # Speichere die Karte als HTML-Datei
+    m.save('world_cities_map.html')
+    m.show_in_browser()
+
+
+bruteforceCoordiantes(25)
+
 #plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
-plot(getCities(10000, 10))
+#plot(getCities(10000, 10))
