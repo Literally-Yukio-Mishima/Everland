@@ -193,7 +193,7 @@ def getCities(pMinPopulation, pLimit=100):
 def plot(pLocations):
     # Erstelle eine leere Karte
     m = folium.Map(location=[0, 0], zoom_start=2)
-
+    
     numberOfItems = len(pLocations)
 
     # Füge für jede Stadt einen Kreismarker hinzu
@@ -203,8 +203,8 @@ def plot(pLocations):
         lon = city['longitude']
         isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
 
-        #if(checkLivable(lat, lon)):
-        if(isStillAboveSeaLevel):
+        if(checkLivable(lat, lon)):
+        #if(isStillAboveSeaLevel):
             print(f"Area: {name} is not flooded, its {elevation} above sea level. [{index}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
@@ -247,5 +247,5 @@ def useGeoJson(pFile):
     return df
 
 
-plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
-#plot(getCities(10000, 10))
+#plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
+plot(getCities(10000, 10))
