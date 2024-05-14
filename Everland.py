@@ -4,6 +4,9 @@ import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import statistics
+import pandas as pd
+import folium
+from folium.plugins import MarkerCluster
 
 
 allowedDeviationPercentageOfRain = 50
@@ -126,8 +129,8 @@ def getCordinates(pName):
 def isStillAboveSeaLevelCords(pLat, pLong):
     url = f"https://api.open-meteo.com/v1/elevation?latitude={pLat}&longitude={pLong}"
     response = requests.get(url)
-
-    return (response.json()['elevation'][0] - seaLevelRise > 1.0)
+    elevation = response.json()['elevation'][0]
+    return (elevation - seaLevelRise > 1.0), elevation
 
 
 
@@ -167,11 +170,74 @@ def getPopulationDensity(pCapital):
 
 
 
+def getCities(pMinPopulation, pLimit=100):
+    url = f"https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/geonames-all-cities-with-a-population-1000/records?select=name%2Cpopulation%2Ccoordinates&where=population%3E{pMinPopulation}&order_by=population%20desc&limit={pLimit}"
+
+    response = requests.get(url)
+    data = response.json()
+    results = data["results"]
+
+    df = pd.DataFrame(columns=['name', 'population', 'latitude', 'longitude'])
+
+    for i in range(len(results)):
+        name = results[i]["name"]
+        pop = results[i]["population"]
+        lon = results[i]["coordinates"]["lon"]
+        lat = results[i]["coordinates"]["lat"]
+
+        df.loc[i] = [name, pop, lat, lon]
+
+    return df
 
 
-cities = ['Berlin', 'Moskau', 'London', 'Bangladesh', 'Wien']
+def plot():
+    # Lade die Städte-Daten mit einer Mindestbevölkerung von 100000
+    df_Cities = getCities(10000, 10)
 
-for city in cities:
-    #lat, long = getCordinates(city)
-    #print(f"City: {city}")
+    # Erstelle eine leere Karte
+    m = folium.Map(location=[0, 0], zoom_start=2)
+
+    # Füge für jede Stadt einen Kreismarker hinzu
+    for index, city in df_Cities.iterrows():
+        name = city['name']        
+        lat = city['latitude']
+        lon = city['longitude']
+
+        isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
+        if(isStillAboveSeaLevel):
+            print(f"City: {name} is not flooded, its {elevation} above sea level.")
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=city['population'] *0.0000001,  # Skaliere den Radius basierend auf der Bevölkerungszahl
+                color='green',
+                fill=True,
+                fill_color='green'
+            ).add_to(m)
+        else:
+            print(f"City: {name} is flooded, its {elevation} above sea level.")
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=city['population'] *0.0000001,  # Skaliere den Radius basierend auf der Bevölkerungszahl
+                color='red',
+                fill=True,
+                fill_color='red'
+            ).add_to(m)
+
+    # Speichere die Karte als HTML-Datei
+    m.save('world_cities_map.html')
+
+    m.show_in_browser()
+
+
+
+
+
+#cities = ['Berlin', 'Moskau', 'London', 'Bangladesh', 'Wien']
+
+for index, city in getCities(10000).iterrows():
+    #print(f"City: {city['name']}")
+    # lat, long = getCordinates(city)
     #print(f"is Livable: {checkLivable(lat,long)} \n\n")
+    print("")
+
+plot()
