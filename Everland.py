@@ -6,11 +6,14 @@ from retry_requests import retry
 import statistics
 import pandas as pd
 import folium
-from folium.plugins import MarkerCluster
 import time
-import geopandas as gpd
 import re
+import xarray as xr
+import pandas as pd
+import numpy as np
+import json
 import csv
+
 
 
 allowedDeviationPercentageOfRain = 50
@@ -308,7 +311,33 @@ def plotDataFromFile(pFile):
     m.save(f'worldFloodMapScale{steps}.html')
     m.show_in_browser()
 
-
+def get_temperature_data(longitude, latitude):
+    # Open the NetCDF file
+    dataset = xr.open_dataset('temperatur-data/data-temps.nc')
+    
+    # Extract the variable of interest
+    tasmax = dataset['tasmax']
+    
+    # Select the data for the specific longitude and latitude
+    location_data = tasmax.sel(lon=longitude, lat=latitude, method='nearest')
+    
+    # Select the data for the time range 1.1.2050 to 24.12.2050
+    selected_data = location_data.sel(time=slice('2050-01-01', '2050-12-24'))
+    
+    # Convert to pandas DataFrame
+    df = selected_data.to_dataframe().reset_index()
+    
+    # Convert temperatures from Kelvin to Celsius
+    df['tasmax'] = df['tasmax'].astype(float) -  273.15
+    
+    # Find the median of the ten highest temperatures in the year 2050
+    top_ten_temperatures = df['tasmax'].nlargest(10)
+    median_top_ten = np.median(top_ten_temperatures)
+    
+    # Round the median temperature to two decimal places
+    median_top_ten = round(median_top_ten, 2)
+    
+    return median_top_ten
 
 def useGeoJson(pFile):
     # Load GeoJSON file
