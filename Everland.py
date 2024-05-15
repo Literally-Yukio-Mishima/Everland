@@ -333,7 +333,7 @@ def get_temperature_data(longitude, latitude):
     # Find the median of the ten highest temperatures in the year 2050
     top_ten_temperatures2020 = df2020['tasmax'].nlargest(10)
     median_top_ten2020 = np.median(top_ten_temperatures2020)
-    median_top_ten2020 = round(median_top_ten, 2)    
+    median_top_ten2020 = round(median_top_ten2020, 2)    
 
     # Find the median of the ten highest temperatures in the year 2050
     top_ten_temperatures2050 = df2050['tasmax'].nlargest(10)
@@ -369,11 +369,15 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
             
             time.sleep(pSleep)
 
-            if(index % 250 == 0):
+            if(index % 10 == 0):
                 print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
                 jsonData = df.to_json(orient='records')
                 with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
                     f.write(jsonData)
+    jsonData = df.to_json(orient='records')
+    with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+        f.write(jsonData)
+
 
 
 
@@ -423,5 +427,5 @@ def plotDataFromFile(pFile):
 
 
 
-bruteforceCoordiantesToFile(70, 150, 25, 0)
+#bruteforceCoordiantesToFile(90, 180, 25, 0)
 plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
