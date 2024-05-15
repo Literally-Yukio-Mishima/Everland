@@ -1,15 +1,22 @@
+import time
+import folium
+import json
+import csv
+import pandas as pd
+import re
+
+# Function to write data to a CSV file
 def writeToCSV(pFile, pLat, pLong, pAbove, pElevation):
     with open(pFile, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
 
-    # Write header if the file is empty
-    if csvfile.tell() == 0:
-        writer.writerow(['latitude', 'longitude', 'aboveSea', 'elevation'])
+        # Write header if the file is empty
+        if csvfile.tell() == 0:
+            writer.writerow(['latitude', 'longitude', 'aboveSea', 'elevation'])
 
-    writer.writerow([pLat, pLong, pAbove, pElevation])
+        writer.writerow([pLat, pLong, pAbove, pElevation])
 
-
-
+# Function to read the last line of coordinates from a CSV file
 def readCordinatedFromCSV(pFile):
     # Open the CSV file and iterate through it
     with open(pFile, 'r', newline='') as csvfile:
@@ -22,7 +29,7 @@ def readCordinatedFromCSV(pFile):
     print(row)
     return row[1], row[2]
 
-
+# Function to brute force coordinates and write them to a CSV file
 def bruteforceCoordiantesToCSV(pFile, pSteps, pSleep=1):
     maxSteps = (180 / pSteps) * (360 / pSteps)
     index = 0
@@ -47,7 +54,7 @@ def bruteforceCoordiantesToCSV(pFile, pSteps, pSleep=1):
 
             time.sleep(pSleep)
 
-
+# Function to build partial GeoJSON files for different longitudes
 def buildPartialGeoJson(pLong, pStep):
     df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
 
@@ -69,15 +76,14 @@ def buildPartialGeoJson(pLong, pStep):
     with open(f"./parts/bruteforcedCordinateLong{pLong}.geojson", 'w') as f:
         f.write(jsonData)
 
-
+# Function to build GeoJSON files for different longitudes
 def buildGeoJson():
     step = 5
     for i in range(-180, 180, step):
         buildPartialGeoJson(i, step)
         time.sleep(10)
 
-
-# Do not use
+# Function to get the country code for a given capital
 def getCountryCode(pCapital):
     url = f"https://restcountries.com/v3.1/capital/{pCapital}"
     response = requests.get(url)
@@ -88,9 +94,7 @@ def getCountryCode(pCapital):
 
     return cca3, name
 
-
-
-# Do not use
+# Function to get the population density for a given capital
 def getPopulationDensity(pCapital):
     cca3, country = getCountryCode(pCapital)
     url = f"https://stats.oecd.org/SDMX-JSON/data/POP_PROJ/{cca3}.MA+FE+TT.D199G5TT.VAR1/all?startTime=2020&endTime=2050&dimensionAtObservation=allDimensions"
@@ -101,26 +105,35 @@ def getPopulationDensity(pCapital):
     population2020 = data['dataSets'][0]['observations']['0:2:0:0:0'][0]
     population2050 = data['dataSets'][0]['observations']['0:2:0:0:30'][0]
 
-    print(f"Bevölkerung in {country} im Jahr 2020: {population2020}")
-    print(f"Bevölkerung in Deutschland im Jahr 2050: {population2050}")
-    print(f"Percsantage change: {calcPercentageIncrease(population2020, population2050)}%")
+    print(f"Population in {country} in 2020: {population2020}")
+    print(f"Population in {country} in 2050: {population2050}")
+    print(f"Percentage change: {calcPercentageIncrease(population2020, population2050)}%")
 
 
 
 
-# Bruteforce coordinates with a scale of 10.
+
+# --------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+# Bruteforce coordinates with a scale of 10 and write to file
 bruteforceCoordiantesToFile(10, 0)
 # Plots the elevation data from the given file.
-#plotDataFromFile('bruteforcedCordinateScale10.geojson')
+# plotDataFromFile('bruteforcedCordinateScale10.geojson')
 
 # Plots the 10 biggest cities with population above 100000 people (using rain, wind, temp, sealevel)
-#plotLivable(getCities(100000, 50))
+# plotLivable(getCities(100000, 50))
 
 # Plots the 10 biggest cities with population above 100000 people (using only sealevel)
-#plotOnlySeaLevel(getCities(100000, 10))
+# plotOnlySeaLevel(getCities(100000, 10))
 
 # Checks the 10 biggest cities with population above 100000 people for liveability.
-#checkCityForLivable(getCities(1000000, 5))
+# checkCityForLivable(getCities(1000000, 5))
+
 """
 ct = getCities(100, 5)
 for index, city in ct.iterrows():
