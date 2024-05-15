@@ -349,7 +349,7 @@ def get_temperature_data(longitude, latitude):
 def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
     df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation', 'tempChangeOK', 'percentageTempChange'])
 
-    maxSteps = (pMaxLat / pSteps) * (pMaxLon / pSteps)
+    maxSteps = (2*pMaxLat / pSteps) * (2*pMaxLon / pSteps)
     index = 0
 
     for lat in range(-pMaxLat, pMaxLat, pSteps): # latitude
@@ -357,16 +357,16 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
             above, elevation = isStillAboveSeaLevelCordsLocal(lat, lon)
             temp = 0
             tempChangeOK = False
-            
+
             if(elevation == 0):
                 above = True
             else:
                 tempChangeOK, temp = get_temperature_data(lat, lon)
 
             df.loc[index] = [lat, lon, above, elevation, tempChangeOK, temp]
-            
+
             index +=1
-            
+
             time.sleep(pSleep)
 
             if(index % 10 == 0):
@@ -374,6 +374,7 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
                 jsonData = df.to_json(orient='records')
                 with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
                     f.write(jsonData)
+
     jsonData = df.to_json(orient='records')
     with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
         f.write(jsonData)
@@ -401,7 +402,7 @@ def plotDataFromFile(pFile):
             (lat + delta_lat, lon + delta_lon)
         ]
 
-        if(data[i]['elevation'] != 0):
+        if(data[i]['elevation'] > 0.5):
             if(data[i]['aboveSea'] and data[i]['tempChangeOK']):
                 folium.Rectangle(
                     bounds=bounds,
