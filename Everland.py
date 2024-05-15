@@ -346,14 +346,14 @@ def get_temperature_data(longitude, latitude):
 
 
 
-def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
+def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
     df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation', 'tempChangeOK', 'percentageTempChange'])
 
-    maxSteps = (180 / pSteps) * (360 / pSteps)
+    maxSteps = (pMaxLat / pSteps) * (pMaxLon / pSteps)
     index = 0
 
-    for lat in range(-90, 90, pSteps): # latitude
-        for lon in range(-180, 180, pSteps): # longitude
+    for lat in range(-pMaxLat, pMaxLat, pSteps): # latitude
+        for lon in range(-pMaxLon, pMaxLon, pSteps): # longitude
             above, elevation = isStillAboveSeaLevelCordsLocal(lat, lon)
             temp = 0
             tempChangeOK = False
@@ -423,5 +423,5 @@ def plotDataFromFile(pFile):
 
 
 
-bruteforceCoordiantesToFile(25, 0)
+bruteforceCoordiantesToFile(70, 150, 25, 0)
 plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
