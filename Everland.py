@@ -491,7 +491,6 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
 
 
 
-
 # Function to plot data from a file on a map
 def plotDataFromFile(pFile):
     # Create a map
@@ -544,6 +543,68 @@ def plotDataFromFile(pFile):
 
 
 
+# Function to plot data from a file on a map
+def plotRawDataFromFile(pFile):
+    # Create a map
+    m = folium.Map(location=[0, 0], zoom_start=2)
+    folium.TileLayer('cartodbpositron').add_to(m)
+
+    # Load data from the file
+    with open(pFile, 'r') as f:
+        data = json.load(f)
+
+    # Extract step size from the file name
+    steps = int(re.search(r'\d+', pFile).group())
+    length = len(data)
+    # Iterate through data points
+    for i in range(length):
+        print(f"Status: {i+1} / {length} ({round((i+1)/length*100, 3)}%)")
+        lat = data[i]['latitude']
+        lon = data[i]['longitude']
+
+        folium.Circle(
+            location=[lat, lon],
+            radius=0.001,
+            color='black'
+        ).add_to(m)
+
+    # Save the map as an HTML file
+    m.save(f'dummy_worldFloodMapScale{steps}.html')
+    # Show the map in the default browser
+    m.show_in_browser()
+
+
+
+def createDummyFile(pMaxLat, pMaxLon, pSteps):
+    # Create an empty DataFrame to store results
+    df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation', 'tempChangeOK', 'percentageTempChange'])
+
+    # Calculate the total number of steps
+    maxSteps = (2 * pMaxLat / pSteps) * (2 * pMaxLon / pSteps)
+    index = 0
+
+    # Iterate through latitude and longitude coordinates
+    for lat in range(-pMaxLat, pMaxLat, pSteps):  # latitude
+        for lon in range(-pMaxLon, pMaxLon, pSteps):  # longitude
+            print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
+            # Set data to None
+            above = None
+            elevation = None
+            tempChangeOK = None
+            temp = None
+
+            # Add data to the DataFrame
+            df.loc[index] = [lat, lon, above, elevation, tempChangeOK, temp]
+
+            index += 1
+
+    # Write final results to a GeoJSON file
+    jsonData = df.to_json(orient='records')
+    with open(f"dummy_bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+        f.write(jsonData)
+
+
+
 
 
 # --------------------------------------------------------------------------------------------------
@@ -551,6 +612,9 @@ def plotDataFromFile(pFile):
 
 
 
+
+#createDummyFile(90, 180, 5)
+plotRawDataFromFile('dummy_bruteforcedCordinate_SeaAndTemp_Scale5.geojson')
 
 #bruteforceCoordiantesToFile(90, 180, 25, 0)
 #plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
