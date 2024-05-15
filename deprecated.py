@@ -104,3 +104,26 @@ def getPopulationDensity(pCapital):
     print(f"Bevölkerung in {country} im Jahr 2020: {population2020}")
     print(f"Bevölkerung in Deutschland im Jahr 2050: {population2050}")
     print(f"Percsantage change: {calcPercentageIncrease(population2020, population2050)}%")
+
+
+
+
+# Bruteforce coordinates with a scale of 10.
+bruteforceCoordiantesToFile(10, 0)
+# Plots the elevation data from the given file.
+#plotDataFromFile('bruteforcedCordinateScale10.geojson')
+
+# Plots the 10 biggest cities with population above 100000 people (using rain, wind, temp, sealevel)
+#plotLivable(getCities(100000, 50))
+
+# Plots the 10 biggest cities with population above 100000 people (using only sealevel)
+#plotOnlySeaLevel(getCities(100000, 10))
+
+# Checks the 10 biggest cities with population above 100000 people for liveability.
+#checkCityForLivable(getCities(1000000, 5))
+"""
+ct = getCities(100, 5)
+for index, city in ct.iterrows():
+    above, _ = isStillAboveSeaLevelCordsMaps(ct['latitude'], ct['longitude'])
+    print(f"City: {city['name']} is above sea level: {above}")
+"""

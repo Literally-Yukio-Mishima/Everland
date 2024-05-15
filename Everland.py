@@ -421,22 +421,7 @@ def plotDataFromFile(pFile):
 
 
 
-# Bruteforce coordinates with a scale of 10.
-bruteforceCoordiantesToFile(10, 0)
-# Plots the elevation data from the given file.
-#plotDataFromFile('bruteforcedCordinateScale10.geojson')
 
-# Plots the 10 biggest cities with population above 100000 people (using rain, wind, temp, sealevel)
-#plotLivable(getCities(100000, 50))
 
-# Plots the 10 biggest cities with population above 100000 people (using only sealevel)
-#plotOnlySeaLevel(getCities(100000, 10))
-
-# Checks the 10 biggest cities with population above 100000 people for liveability.
-#checkCityForLivable(getCities(1000000, 5))
-"""
-ct = getCities(100, 5)
-for index, city in ct.iterrows():
-    above, _ = isStillAboveSeaLevelCordsMaps(ct['latitude'], ct['longitude'])
-    print(f"City: {city['name']} is above sea level: {above}")
-"""
+bruteforceCoordiantesToFile(25, 0)
+plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
