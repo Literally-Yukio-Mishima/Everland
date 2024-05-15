@@ -153,18 +153,13 @@ def isStillAboveSeaLevelCordsMeteo(pLat, pLong):
     return (elevation - seaLevelRise > 1.0), elevation
 
 
-def isStillAboveSeaLevelCordsMaps(pLat, pLong):
-    try:
-        url = f"https://www.mapcoordinates.net/admin/component/edit/Vpc_MapCoordinates_Advanced_GoogleMapCoords_Component/Component/json-get-elevation?latitude={pLat}&longitude={pLong}"
-        response = requests.get(url)
-        print(response)
-        elevation = response.json()['elevation'][0]
-    except:
-        elevation = 0
+def isStillAboveSeaLevelCordsLocal(pLat, pLong):
+    url = f"http://10.0.12.227:5000/v1/test-dataset?locations={pLat},{pLong}"
+    response = requests.get(url)
+    data = response.json()
 
+    elevation = data['results'][0]['elevation']
     return (elevation - seaLevelRise > 1.0), elevation
-
-print(isStillAboveSeaLevelCordsMaps(24,90))
 
 
 def isStillAboveSeaLevelElevation(pElevation, seaLevelRise=0):
@@ -345,7 +340,7 @@ def bruteforceElevation(pLat, pLong):
 
 
 
-def bruteforceCoordiantesToFile(pSteps, pSleep=1):
+def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
     df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
 
     maxSteps = (180 / pSteps) * (360 / pSteps)
@@ -355,11 +350,9 @@ def bruteforceCoordiantesToFile(pSteps, pSleep=1):
         for j in range(-180, 180, pSteps): # longitude
             print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
 
-            elevation = bruteforceElevation(i, j)
+            above, elevation = isStillAboveSeaLevelCordsLocal(i, j)
             if(elevation == 0):
                 above = True
-            else:
-                above = isStillAboveSeaLevelElevation(elevation)
 
             df.loc[index] = [i, j, above, elevation]
             index +=1
@@ -373,7 +366,7 @@ def bruteforceCoordiantesToFile(pSteps, pSleep=1):
 
 
 # Bruteforce coordinates with a scale of 10.
-#bruteforceCoordiantesToFile(10, 0.1)
+bruteforceCoordiantesToFile(10, 0)
 # Plots the elevation data from the given file.
 #plotDataFromFile('bruteforcedCordinateScale10.geojson')
 
