@@ -10,6 +10,7 @@ from folium.plugins import MarkerCluster
 import time
 import geopandas as gpd
 import re
+import csv
 
 
 allowedDeviationPercentageOfRain = 50
@@ -100,7 +101,7 @@ def checkLivable(pLat, pLong):
     percentrageIncreaseWind = calcPercentageIncrease(legacy_wind_speed_10m_max, future_wind_speed_10m_max)
     print(f"Percentage Increse of wind: {percentrageIncreaseWind}% / {allowedDeviationPercentageOfWind}%")
 
-    stillAboveSeaLevel = isStillAboveSeaLevelCords(pLat, pLong)
+    stillAboveSeaLevel, _ = isStillAboveSeaLevelCords(pLat, pLong)
     print(f"Still above sea level: {stillAboveSeaLevel}")
 
     if(percentrageIncreaseRain < (-1)*allowedDeviationPercentageOfRain or percentrageIncreaseRain > allowedDeviationPercentageOfRain):
@@ -112,7 +113,19 @@ def checkLivable(pLat, pLong):
     elif(not stillAboveSeaLevel):
         livable = False
 
+    print(f"Still livable: {livable}")
+
     return livable
+
+
+
+def checkCityForLivable(pLocations):
+    for index, city in pLocations.iterrows():
+        print(f">> City: {city['name']}")
+        lat = city['latitude']
+        lon = city['longitude']
+        checkLivable(lat, lon)
+        print("")
 
 
 
@@ -145,35 +158,6 @@ def isStillAboveSeaLevelElevation(pElevation, seaLevelRise=0):
     return (pElevation - seaLevelRise > 1)
 
 
-# Do not use
-def getCountryCode(pCapital):
-    url = f"https://restcountries.com/v3.1/capital/{pCapital}"
-    response = requests.get(url)
-    data = response.json()
-
-    cca3 = data[0]['cca3']
-    name = data[0]['name']['nativeName'][cca3.lower()]['common']
-
-    return cca3, name
-
-
-
-# Do not use
-def getPopulationDensity(pCapital):
-    cca3, country = getCountryCode(pCapital)
-    url = f"https://stats.oecd.org/SDMX-JSON/data/POP_PROJ/{cca3}.MA+FE+TT.D199G5TT.VAR1/all?startTime=2020&endTime=2050&dimensionAtObservation=allDimensions"
-
-    response = requests.get(url)
-    data = response.json()
-
-    population2020 = data['dataSets'][0]['observations']['0:2:0:0:0'][0]
-    population2050 = data['dataSets'][0]['observations']['0:2:0:0:30'][0]
-
-    print(f"Bevölkerung in {country} im Jahr 2020: {population2020}")
-    print(f"Bevölkerung in Deutschland im Jahr 2050: {population2050}")
-    print(f"Percsantage change: {calcPercentageIncrease(population2020, population2050)}%")
-
-
 
 def getCities(pMinPopulation, pLimit=100):
     url = f"https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/geonames-all-cities-with-a-population-1000/records?select=name%2Cpopulation%2Ccoordinates&where=population%3E{pMinPopulation}&order_by=population%20desc&limit={pLimit}"
@@ -195,11 +179,12 @@ def getCities(pMinPopulation, pLimit=100):
     return df
 
 
-def plot(pLocations):
+
+def plotLivable(pLocations):
     # Erstelle eine leere Karte
     m = folium.Map(location=[0, 0], zoom_start=2)
     folium.TileLayer('cartodbpositron').add_to(m)
-    
+
     numberOfItems = len(pLocations)
 
     # Füge für jede Stadt einen Kreismarker hinzu
@@ -209,12 +194,11 @@ def plot(pLocations):
         lon = city['longitude']
         isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
 
-        #if(checkLivable(lat, lon)):
-        if(isStillAboveSeaLevel):
+        if(checkLivable(lat, lon)):
             print(f"Area '{name}' is still good. [{index+1}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
-                radius=city['population'] *0.0000001,
+                radius=city['population'] *0.000001,
                 color='green',
                 fill=True,
                 fill_color='green'
@@ -223,7 +207,7 @@ def plot(pLocations):
             print(f"Area '{name}' wont be good [{index+1}/{numberOfItems}]")
             folium.CircleMarker(
                 location=[lat, lon],
-                radius=city['population'] *0.0000001,
+                radius=city['population'] *0.000001,
                 color='red',
                 fill=True,
                 fill_color='red'
@@ -234,57 +218,44 @@ def plot(pLocations):
     m.show_in_browser()
 
 
-def useGeoJson(pFile):
-    # Load GeoJSON file
-    with open(pFile, 'r', encoding='utf-8') as f:
-        data = json.load(f)
 
-    df = pd.DataFrame(columns=['name', 'population', 'latitude', 'longitude'])
+def plotOnlySeaLevel(pLocations):
+    # Erstelle eine leere Karte
+    m = folium.Map(location=[0, 0], zoom_start=2)
+    folium.TileLayer('cartodbpositron').add_to(m)
 
-    results = data['features']
-    for i in range(len(results)):
-        name = results[i]['properties']['gis_name']
-        pop = 0 #results[i]['properties'].get('population', None)
-        lon = results[i]['geometry']['coordinates'][0]
-        lat = results[i]['geometry']['coordinates'][1]
+    numberOfItems = len(pLocations)
 
-        df.loc[i] = [name, pop, lat, lon]
+    # Füge für jede Stadt einen Kreismarker hinzu
+    for index, city in pLocations.iterrows():
+        name = city['name']
+        lat = city['latitude']
+        lon = city['longitude']
+        isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
 
-    return df
+        if(isStillAboveSeaLevel):
+            print(f"Area '{name}' is still good. [{index+1}/{numberOfItems}]")
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=city['population'] *0.000001,
+                color='green',
+                fill=True,
+                fill_color='green'
+            ).add_to(m)
+        else:
+            print(f"Area '{name}' wont be good [{index+1}/{numberOfItems}]")
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=city['population'] *0.000001,
+                color='red',
+                fill=True,
+                fill_color='red'
+            ).add_to(m)
 
+    # Speichere die Karte als HTML-Datei
+    m.save('world_cities_map.html')
+    m.show_in_browser()
 
-def bruteforceElevation(pLat, pLong):
-    url = f"https://api.open-elevation.com/api/v1/lookup?locations={pLat},{pLong}"
-    response = requests.get(url).json()
-    try:
-        return response['results'][0]['elevation']
-    except:
-        raise Exception(response)
-
-def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
-    df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
-
-    maxSteps = (180 / pSteps) * (360 / pSteps)
-    index = 0
-    for i in range(-90, 90, pSteps): # latitude
-        for j in range(-180, 180, pSteps): # longitude
-            print(f"Status: {index} / {maxSteps} ({index/maxSteps*100})")
-
-            elevation = bruteforceElevation(i, j)
-            if(elevation == 0):
-                above = True
-            else:
-                above = isStillAboveSeaLevelElevation(elevation)
-
-            df.loc[index] = [i, j, above, elevation]
-            index +=1
-            time.sleep(pSleep)
-
-    print(df)
-    jsonData = df.to_json(orient='records')
-
-    with open(f"bruteforcedCordinateScale{pSteps}.geojson", 'w') as f:
-        f.write(jsonData)
 
 
 def plotDataFromFile(pFile):
@@ -331,9 +302,72 @@ def plotDataFromFile(pFile):
 
 
 
-scale = 10
-#bruteforceCoordiantesToFile(scale)
-plotDataFromFile(f'bruteforcedCordinateScale{scale}.geojson')
+def useGeoJson(pFile):
+    # Load GeoJSON file
+    with open(pFile, 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-#plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
-#plot(getCities(10000, 10))
+    df = pd.DataFrame(columns=['name', 'population', 'latitude', 'longitude'])
+
+    results = data['features']
+    for i in range(len(results)):
+        name = results[i]['properties']['gis_name']
+        pop = 0 #results[i]['properties'].get('population', None)
+        lon = results[i]['geometry']['coordinates'][0]
+        lat = results[i]['geometry']['coordinates'][1]
+
+        df.loc[i] = [name, pop, lat, lon]
+
+    return df
+
+
+
+def bruteforceElevation(pLat, pLong):
+    url = f"https://api.open-elevation.com/api/v1/lookup?locations={pLat},{pLong}"
+    response = requests.get(url).json()
+    try:
+        return response['results'][0]['elevation']
+    except:
+        raise Exception(response)
+
+
+
+def bruteforceCoordiantesToFile(pSteps, pSleep=1):
+    df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
+
+    maxSteps = (180 / pSteps) * (360 / pSteps)
+    index = 0
+
+    for i in range(-90, 90, pSteps): # latitude
+        for j in range(-180, 180, pSteps): # longitude
+            print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
+
+            elevation = bruteforceElevation(i, j)
+            if(elevation == 0):
+                above = True
+            else:
+                above = isStillAboveSeaLevelElevation(elevation)
+
+            df.loc[index] = [i, j, above, elevation]
+            index +=1
+            time.sleep(pSleep)
+
+            jsonData = df.to_json(orient='records')
+
+            with open(f"bruteforcedCordinateScale{pSteps}.geojson", 'w') as f:
+                f.write(jsonData)
+
+
+
+
+# Plots the elevation data from the given file.
+#plotDataFromFile('bruteforcedCordinateScale10.geojson')
+
+# Plots the 10 biggest cities with population above 100000 people (using rain, wind, temp, sealevel)
+plotLivable(getCities(100000, 10))
+
+# Plots the 10 biggest cities with population above 100000 people (using only sealevel)
+#plotOnlySeaLevel(getCities(100000, 10))
+
+# Checks the 10 biggest cities with population above 100000 people for liveability.
+#checkCityForLivable(getCities(1000000, 5))
