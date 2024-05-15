@@ -4,15 +4,14 @@ import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import statistics
-import pandas as pd
 import folium
 import time
 import re
 import xarray as xr
 import pandas as pd
 import numpy as np
-import json
 import csv
+
 
 
 # Changes in rain fall percentage are allowed in an intervall from -50% to 50%.
@@ -32,10 +31,12 @@ retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
 openmeteo = openmeteo_requests.Client(session = retry_session)
 
 
+
 # Calculates the median of the ten highest data points in a given data set.
 def getTopTenMedian(pData):
     topTen = sorted(pData, reverse=True)[:10]
     return statistics.median(topTen)
+
 
 
 # Queries the Open-Meteo Api for legacy (2020) weather data.
@@ -279,7 +280,7 @@ def plotLivable(pLocations):
             ).add_to(m)
 
     # Save the map as an HTML file and display it in the browser
-    m.save('world_cities_map.html')
+    m.save('./hmtl/world_cities_map.html')
     m.show_in_browser()
 
 
@@ -323,7 +324,7 @@ def plotOnlySeaLevel(pLocations):
             ).add_to(m)
 
     # Save the map as an HTML file and display it in the browser
-    m.save('world_cities_map.html')
+    m.save('./hmtl/world_cities_map.html')
     m.show_in_browser()
 
 
@@ -476,21 +477,16 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
             # Pause for a while to avoid overwhelming the server
             time.sleep(pSleep)
 
-<<<<<<< HEAD
             if(index % 250 == 0):
-=======
-            # Print progress status
-            if index % 10 == 0:
->>>>>>> 75a1788edffe4f061436f8f627d874fab5c6e487
                 print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
                 # Write intermediate results to a GeoJSON file
                 jsonData = df.to_json(orient='records')
-                with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+                with open(f"./geojson/bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
                     f.write(jsonData)
 
     # Write final results to a GeoJSON file
     jsonData = df.to_json(orient='records')
-    with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+    with open(f"./geojson/bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
         f.write(jsonData)
 
 
@@ -519,7 +515,6 @@ def plotDataFromFile(pFile):
             (lat + delta_lat, lon + delta_lon)
         ]
 
-<<<<<<< HEAD
         if(data[i]['elevation'] > 0.0):
             if not(data[i]['aboveSea']):
                 folium.Rectangle(
@@ -538,12 +533,6 @@ def plotDataFromFile(pFile):
                     fill_opacity=0.5
                 ).add_to(m)                
             else:
-=======
-        # Check elevation and temperature change status
-        if data[i]['elevation'] > 0.5:
-            if data[i]['aboveSea'] and data[i]['tempChangeOK']:
-                # Add a green rectangle for locations above sea level with acceptable temperature change
->>>>>>> 75a1788edffe4f061436f8f627d874fab5c6e487
                 folium.Rectangle(
                     bounds=bounds,
                     color=None,
@@ -551,22 +540,9 @@ def plotDataFromFile(pFile):
                     fill_color='green',
                     fill_opacity=0.5
                 ).add_to(m)
-<<<<<<< HEAD
-
-=======
-            else:
-                # Add a red rectangle for other locations
-                folium.Rectangle(
-                    bounds=bounds,
-                    color=None,
-                    fill=True,
-                    fill_color='red',
-                    fill_opacity=0.5
-                ).add_to(m)
->>>>>>> 75a1788edffe4f061436f8f627d874fab5c6e487
 
     # Save the map as an HTML file
-    m.save(f'worldFloodMapScale{steps}.html')
+    m.save(f'./hmtl/worldFloodMapScale{steps}.html')
     # Show the map in the default browser
     m.show_in_browser()
 
@@ -598,7 +574,7 @@ def plotRawDataFromFile(pFile):
         ).add_to(m)
 
     # Save the map as an HTML file
-    m.save(f'dummy_worldFloodMapScale{steps}.html')
+    m.save(f'./html/dummy_worldFloodMapScale{steps}.html')
     # Show the map in the default browser
     m.show_in_browser()
 
@@ -629,7 +605,7 @@ def createDummyFile(pMaxLat, pMaxLon, pSteps):
 
     # Write final results to a GeoJSON file
     jsonData = df.to_json(orient='records')
-    with open(f"dummy_bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+    with open(f"./geojson/dummy_bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
         f.write(jsonData)
 
 
@@ -642,16 +618,11 @@ def createDummyFile(pMaxLat, pMaxLon, pSteps):
 
 
 
-#createDummyFile(90, 180, 5)
-plotRawDataFromFile('dummy_bruteforcedCordinate_SeaAndTemp_Scale1.geojson')
+createDummyFile(90, 180, 5)
+plotRawDataFromFile('./geojson/dummy_bruteforcedCordinate_SeaAndTemp_Scale5.geojson')
 
-<<<<<<< HEAD
-#bruteforceCoordiantesToFile(90, 180, 1, 0)
-plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale1.geojson')
-=======
 #bruteforceCoordiantesToFile(90, 180, 25, 0)
-#plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
+#plotDataFromFile('./geojson/bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
 
 #lat, lon = getCordinates('Sydney')
 #checkLivable(lat, lon)
->>>>>>> 75a1788edffe4f061436f8f627d874fab5c6e487
