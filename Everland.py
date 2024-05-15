@@ -369,7 +369,7 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
 
             time.sleep(pSleep)
 
-            if(index % 10 == 0):
+            if(index % 250 == 0):
                 print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
                 jsonData = df.to_json(orient='records')
                 with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
@@ -402,8 +402,24 @@ def plotDataFromFile(pFile):
             (lat + delta_lat, lon + delta_lon)
         ]
 
-        if(data[i]['elevation'] > 0.5):
-            if(data[i]['aboveSea'] and data[i]['tempChangeOK']):
+        if(data[i]['elevation'] > 0.0):
+            if not(data[i]['aboveSea']):
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
+                    fill=True,
+                    fill_color='blue',
+                    fill_opacity=0.5
+                ).add_to(m)                   
+            elif not (data[i]['tempChangeOK']):
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
+                    fill=True,
+                    fill_color='red',
+                    fill_opacity=0.5
+                ).add_to(m)                
+            else:
                 folium.Rectangle(
                     bounds=bounds,
                     color=None,
@@ -411,14 +427,7 @@ def plotDataFromFile(pFile):
                     fill_color='green',
                     fill_opacity=0.5
                 ).add_to(m)
-            else:
-                folium.Rectangle(
-                    bounds=bounds,
-                    color=None,
-                    fill=True,
-                    fill_color='red',
-                    fill_opacity=0.5
-                ).add_to(m)
+
 
     # Speichere die Karte als HTML-Datei
     m.save(f'worldFloodMapScale{steps}.html')
@@ -428,5 +437,5 @@ def plotDataFromFile(pFile):
 
 
 
-#bruteforceCoordiantesToFile(90, 180, 25, 0)
-plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
+#bruteforceCoordiantesToFile(90, 180, 1, 0)
+plotDataFromFile('bruteforcedCordinate_SeaAndTemp_Scale1.geojson')
