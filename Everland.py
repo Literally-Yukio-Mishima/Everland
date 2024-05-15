@@ -156,15 +156,6 @@ def isStillAboveSeaLevelCordsMeteo(pLat, pLong):
     return (elevation - seaLevelRise > 1.0), elevation
 
 
-def isStillAboveSeaLevelCordsLocal(pLat, pLong):
-    url = f"http://10.0.12.227:5000/v1/test-dataset?locations={pLat},{pLong}"
-    response = requests.get(url)
-    data = response.json()
-
-    elevation = data['results'][0]['elevation']
-    return (elevation - seaLevelRise > 1.0), elevation
-
-
 def isStillAboveSeaLevelElevation(pElevation, seaLevelRise=0):
     return (pElevation - seaLevelRise > 1)
 
@@ -266,50 +257,55 @@ def plotOnlySeaLevel(pLocations):
     # Speichere die Karte als HTML-Datei
     m.save('world_cities_map.html')
     m.show_in_browser()
+    
 
 
-
-def plotDataFromFile(pFile):
-    m = folium.Map(location=[0, 0], zoom_start=2)
-    folium.TileLayer('cartodbpositron').add_to(m)
-
-    with open(pFile, 'r') as f:
+def useGeoJson(pFile):
+    # Load GeoJSON file
+    with open(pFile, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    steps = int(re.search(r'\d+', pFile).group())
+    df = pd.DataFrame(columns=['name', 'population', 'latitude', 'longitude'])
 
-    # Füge für jede Stadt einen Marker hinzu
-    for i in range(len(data)):
-        lat = data[i]['latitude']
-        lon = data[i]['longitude']
-        delta_lat = steps / 2
-        delta_lon = steps / 2
-        bounds = [
-            (lat - delta_lat, lon - delta_lon),
-            (lat + delta_lat, lon + delta_lon)
-        ]
+    results = data['features']
+    for i in range(len(results)):
+        name = results[i]['properties']['gis_name']
+        pop = 0 #results[i]['properties'].get('population', None)
+        lon = results[i]['geometry']['coordinates'][0]
+        lat = results[i]['geometry']['coordinates'][1]
 
-        if(data[i]['elevation'] != 0):
-            if(data[i]['aboveSea'] or  data[i]['temperatur']):
-                folium.Rectangle(
-                    bounds=bounds,
-                    color=None,
-                    fill=True,
-                    fill_color='green',
-                    fill_opacity=0.5
-                ).add_to(m)
-            else:
-                folium.Rectangle(
-                    bounds=bounds,
-                    color=None,
-                    fill=True,
-                    fill_color='red',
-                    fill_opacity=0.5
-                ).add_to(m)
+        df.loc[i] = [name, pop, lat, lon]
 
-    # Speichere die Karte als HTML-Datei
-    m.save(f'worldFloodMapScale{steps}.html')
-    m.show_in_browser()
+    return df
+
+
+
+def bruteforceElevation(pLat, pLong):
+    url = f"https://api.open-elevation.com/api/v1/lookup?locations={pLat},{pLong}"
+    response = requests.get(url).json()
+    try:
+        return response['results'][0]['elevation']
+    except:
+        raise Exception(response)
+
+
+
+
+
+# -----------------------------------------------------------------------------------------------
+
+
+
+
+
+def isStillAboveSeaLevelCordsLocal(pLat, pLong):
+    url = f"http://10.0.12.227:5000/v1/test-dataset?locations={pLat},{pLong}"
+    response = requests.get(url)
+    data = response.json()
+
+    elevation = data['results'][0]['elevation']
+    return (elevation - seaLevelRise > 1.0), elevation
+
 
 
 def get_temperature_data(longitude, latitude):
@@ -348,37 +344,6 @@ def get_temperature_data(longitude, latitude):
 
     return (percentageChange > (-1)*allowedDeviationPercentageOfTemp) and (percentageChange < allowedDeviationPercentageOfTemp), percentageChange
 
-    
-
-
-def useGeoJson(pFile):
-    # Load GeoJSON file
-    with open(pFile, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-
-    df = pd.DataFrame(columns=['name', 'population', 'latitude', 'longitude'])
-
-    results = data['features']
-    for i in range(len(results)):
-        name = results[i]['properties']['gis_name']
-        pop = 0 #results[i]['properties'].get('population', None)
-        lon = results[i]['geometry']['coordinates'][0]
-        lat = results[i]['geometry']['coordinates'][1]
-
-        df.loc[i] = [name, pop, lat, lon]
-
-    return df
-
-
-
-def bruteforceElevation(pLat, pLong):
-    url = f"https://api.open-elevation.com/api/v1/lookup?locations={pLat},{pLong}"
-    response = requests.get(url).json()
-    try:
-        return response['results'][0]['elevation']
-    except:
-        raise Exception(response)
-
 
 
 def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
@@ -409,6 +374,50 @@ def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
                 jsonData = df.to_json(orient='records')
                 with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
                     f.write(jsonData)
+
+
+
+def plotDataFromFile(pFile):
+    m = folium.Map(location=[0, 0], zoom_start=2)
+    folium.TileLayer('cartodbpositron').add_to(m)
+
+    with open(pFile, 'r') as f:
+        data = json.load(f)
+
+    steps = int(re.search(r'\d+', pFile).group())
+
+    # Füge für jede Stadt einen Marker hinzu
+    for i in range(len(data)):
+        lat = data[i]['latitude']
+        lon = data[i]['longitude']
+        delta_lat = steps / 2
+        delta_lon = steps / 2
+        bounds = [
+            (lat - delta_lat, lon - delta_lon),
+            (lat + delta_lat, lon + delta_lon)
+        ]
+
+        if(data[i]['elevation'] != 0):
+            if(data[i]['aboveSea'] and data[i]['tempChangeOK']):
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
+                    fill=True,
+                    fill_color='green',
+                    fill_opacity=0.5
+                ).add_to(m)
+            else:
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
+                    fill=True,
+                    fill_color='red',
+                    fill_opacity=0.5
+                ).add_to(m)
+
+    # Speichere die Karte als HTML-Datei
+    m.save(f'worldFloodMapScale{steps}.html')
+    m.show_in_browser()
 
 
 
