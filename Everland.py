@@ -290,15 +290,7 @@ def plotDataFromFile(pFile):
         ]
 
         if(data[i]['elevation'] != 0):
-            if not(data[i]['aboveSea']):
-                folium.Rectangle(
-                    bounds=bounds,
-                    color=None,
-                    fill=True,
-                    fill_color='red',
-                    fill_opacity=0.5
-                ).add_to(m)
-            else:
+            if(data[i]['aboveSea'] or  data[i]['temperatur']):
                 folium.Rectangle(
                     bounds=bounds,
                     color=None,
@@ -306,10 +298,19 @@ def plotDataFromFile(pFile):
                     fill_color='green',
                     fill_opacity=0.5
                 ).add_to(m)
+            else:
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
+                    fill=True,
+                    fill_color='red',
+                    fill_opacity=0.5
+                ).add_to(m)
 
     # Speichere die Karte als HTML-Datei
     m.save(f'worldFloodMapScale{steps}.html')
     m.show_in_browser()
+
 
 def get_temperature_data(longitude, latitude):
     # Open the NetCDF file
@@ -319,25 +320,36 @@ def get_temperature_data(longitude, latitude):
     tasmax = dataset['tasmax']
     
     # Select the data for the specific longitude and latitude
-    location_data = tasmax.sel(lon=longitude, lat=latitude, method='nearest')
+    location = tasmax.sel(lon=longitude, lat=latitude, method='nearest')
     
     # Select the data for the time range 1.1.2050 to 24.12.2050
-    selected_data = location_data.sel(time=slice('2050-01-01', '2050-12-24'))
+    temp2020 = location.sel(time=slice('2020-01-01', '2020-12-24'))
+    temp2050 = location.sel(time=slice('2050-01-01', '2050-12-24'))
     
     # Convert to pandas DataFrame
-    df = selected_data.to_dataframe().reset_index()
+    df2020 = temp2020.to_dataframe().reset_index()
+    df2050 = temp2050.to_dataframe().reset_index()
     
     # Convert temperatures from Kelvin to Celsius
-    df['tasmax'] = df['tasmax'].astype(float) -  273.15
+    df2020['tasmax'] = df2020['tasmax'].astype(float) -  273.15
+    df2050['tasmax'] = df2050['tasmax'].astype(float) -  273.15
     
     # Find the median of the ten highest temperatures in the year 2050
-    top_ten_temperatures = df['tasmax'].nlargest(10)
-    median_top_ten = np.median(top_ten_temperatures)
+    top_ten_temperatures2020 = df2020['tasmax'].nlargest(10)
+    median_top_ten2020 = np.median(top_ten_temperatures2020)
+    median_top_ten2020 = round(median_top_ten, 2)    
+
+    # Find the median of the ten highest temperatures in the year 2050
+    top_ten_temperatures2050 = df2050['tasmax'].nlargest(10)
+    median_top_ten2050 = np.median(top_ten_temperatures2050)
+    median_top_ten2050 = round(median_top_ten2050, 2)   
+
+    percentageChange = calcPercentageIncrease(median_top_ten2020, median_top_ten2050)
+
+    return (percentageChange > (-1)*allowedDeviationPercentageOfTemp) and (percentageChange < allowedDeviationPercentageOfTemp), percentageChange
+
     
-    # Round the median temperature to two decimal places
-    median_top_ten = round(median_top_ten, 2)
-    
-    return median_top_ten
+
 
 def useGeoJson(pFile):
     # Load GeoJSON file
@@ -370,27 +382,33 @@ def bruteforceElevation(pLat, pLong):
 
 
 def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
-    df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
+    df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation', 'tempChangeOK', 'percentageTempChange'])
 
     maxSteps = (180 / pSteps) * (360 / pSteps)
     index = 0
 
-    for i in range(-90, 90, pSteps): # latitude
-        for j in range(-180, 180, pSteps): # longitude
-            print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
-
-            above, elevation = isStillAboveSeaLevelCordsLocal(i, j)
+    for lat in range(-90, 90, pSteps): # latitude
+        for lon in range(-180, 180, pSteps): # longitude
+            above, elevation = isStillAboveSeaLevelCordsLocal(lat, lon)
+            temp = 0
+            tempChangeOK = False
+            
             if(elevation == 0):
                 above = True
+            else:
+                tempChangeOK, temp = get_temperature_data(lat, lon)
 
-            df.loc[index] = [i, j, above, elevation]
+            df.loc[index] = [lat, lon, above, elevation, tempChangeOK, temp]
+            
             index +=1
+            
             time.sleep(pSleep)
 
-            jsonData = df.to_json(orient='records')
-
-            with open(f"bruteforcedCordinateScale{pSteps}.geojson", 'w') as f:
-                f.write(jsonData)
+            if(index % 250 == 0):
+                print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
+                jsonData = df.to_json(orient='records')
+                with open(f"bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+                    f.write(jsonData)
 
 
 
