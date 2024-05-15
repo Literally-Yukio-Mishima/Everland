@@ -1,0 +1,38 @@
+{
+  "Ukraine": [
+    {"name": "Kyiv", "coordinates": {"lat": 50.4501, "lon": 30.5234}},
+    {"name": "Donetsk", "coordinates": {"lat": 48.0159, "lon": 37.8029}},
+    {"name": "Luhansk", "coordinates": {"lat": 48.5740, "lon": 39.3078}}
+  ],
+  "Syria": [
+    {"name": "Damascus", "coordinates": {"lat": 33.5138, "lon": 36.2765}},
+    {"name": "Aleppo", "coordinates": {"lat": 36.2021, "lon": 37.1343}},
+    {"name": "Idlib", "coordinates": {"lat": 35.9297, "lon": 36.6317}}
+  ],
+  "Yemen": [
+    {"name": "Sana'a", "coordinates": {"lat": 15.3694, "lon": 44.1910}},
+    {"name": "Aden", "coordinates": {"lat": 12.8000, "lon": 45.0333}}
+  ],
+  "Ethiopia (Tigray Region)": [
+    {"name": "Mekelle", "coordinates": {"lat": 13.4967, "lon": 39.4753}}
+  ],
+  "Somalia": [
+    {"name": "Mogadishu", "coordinates": {"lat": 2.0469, "lon": 45.3182}},
+    {"name": "Kismayo", "coordinates": {"lat": 0.3582, "lon": 42.5454}}
+  ],
+  "Afghanistan": [
+    {"name": "Kabul", "coordinates": {"lat": 34.5553, "lon": 69.2075}},
+    {"name": "Kandahar", "coordinates": {"lat": 31.6289, "lon": 65.7372}}
+  ],
+  "Myanmar": [
+    {"name": "Naypyidaw", "coordinates": {"lat": 19.7633, "lon": 96.0785}}
+  ],
+  "Democratic Republic of the Congo": [
+    {"name": "Goma", "coordinates": {"lat": 1.6585, "lon": 29.2205}},
+    {"name": "Bukavu", "coordinates": {"lat": 2.5083, "lon": 28.8608}}
+  ],
+  "Sudan": [
+    {"name": "Khartoum", "coordinates": {"lat": 15.5007, "lon": 32.5599}},
+    {"name": "Darfur", "coordinates": {"lat": 12.8827, "lon": 23.4921}}
+  ]
+}
