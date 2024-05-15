@@ -101,7 +101,7 @@ def checkLivable(pLat, pLong):
     percentrageIncreaseWind = calcPercentageIncrease(legacy_wind_speed_10m_max, future_wind_speed_10m_max)
     #print(f"Percentage Increse of wind: {percentrageIncreaseWind}% / {allowedDeviationPercentageOfWind}%")
 
-    stillAboveSeaLevel, _ = isStillAboveSeaLevelCords(pLat, pLong)
+    stillAboveSeaLevel, _ = isStillAboveSeaLevelCordsMeteo(pLat, pLong)
     #print(f"Still above sea level: {stillAboveSeaLevel}")
 
     if(percentrageIncreaseRain < (-1)*allowedDeviationPercentageOfRain or percentrageIncreaseRain > allowedDeviationPercentageOfRain):
@@ -142,7 +142,7 @@ def getCordinates(pName):
 
 
 
-def isStillAboveSeaLevelCords(pLat, pLong):
+def isStillAboveSeaLevelCordsMeteo(pLat, pLong):
     try:
         url = f"https://api.open-meteo.com/v1/elevation?latitude={pLat}&longitude={pLong}"
         response = requests.get(url)
@@ -152,6 +152,19 @@ def isStillAboveSeaLevelCords(pLat, pLong):
 
     return (elevation - seaLevelRise > 1.0), elevation
 
+
+def isStillAboveSeaLevelCordsMaps(pLat, pLong):
+    try:
+        url = f"https://www.mapcoordinates.net/admin/component/edit/Vpc_MapCoordinates_Advanced_GoogleMapCoords_Component/Component/json-get-elevation?latitude={pLat}&longitude={pLong}"
+        response = requests.get(url)
+        print(response)
+        elevation = response.json()['elevation'][0]
+    except:
+        elevation = 0
+
+    return (elevation - seaLevelRise > 1.0), elevation
+
+print(isStillAboveSeaLevelCordsMaps(24,90))
 
 
 def isStillAboveSeaLevelElevation(pElevation, seaLevelRise=0):
@@ -192,7 +205,7 @@ def plotLivable(pLocations):
         name = city['name']
         lat = city['latitude']
         lon = city['longitude']
-        isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
+        isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCordsMeteo(lat, lon)
 
         if(checkLivable(lat, lon)):
             print(f"Area '{name}' is still good. [{index+1}/{numberOfItems}]")
@@ -231,7 +244,7 @@ def plotOnlySeaLevel(pLocations):
         name = city['name']
         lat = city['latitude']
         lon = city['longitude']
-        isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCords(lat, lon)
+        isStillAboveSeaLevel, elevation = isStillAboveSeaLevelCordsMeteo(lat, lon)
 
         if(isStillAboveSeaLevel):
             print(f"Area '{name}' is still good. [{index+1}/{numberOfItems}]")
@@ -297,7 +310,7 @@ def plotDataFromFile(pFile):
                 ).add_to(m)
 
     # Speichere die Karte als HTML-Datei
-    m.save(f'worldFloodMapScale{scale}.html')
+    m.save(f'worldFloodMapScale{steps}.html')
     m.show_in_browser()
 
 
@@ -359,11 +372,10 @@ def bruteforceCoordiantesToFile(pSteps, pSleep=1):
 
 
 
-
 # Bruteforce coordinates with a scale of 10.
-bruteforceCoordiantesToFile(10, 0.1)
+#bruteforceCoordiantesToFile(10, 0.1)
 # Plots the elevation data from the given file.
-plotDataFromFile('bruteforcedCordinateScale10.geojson')
+#plotDataFromFile('bruteforcedCordinateScale10.geojson')
 
 # Plots the 10 biggest cities with population above 100000 people (using rain, wind, temp, sealevel)
 #plotLivable(getCities(100000, 50))
@@ -373,3 +385,9 @@ plotDataFromFile('bruteforcedCordinateScale10.geojson')
 
 # Checks the 10 biggest cities with population above 100000 people for liveability.
 #checkCityForLivable(getCities(1000000, 5))
+"""
+ct = getCities(100, 5)
+for index, city in ct.iterrows():
+    above, _ = isStillAboveSeaLevelCordsMaps(ct['latitude'], ct['longitude'])
+    print(f"City: {city['name']} is above sea level: {above}")
+"""
