@@ -618,8 +618,8 @@ def createDummyFile(pMaxLat, pMaxLon, pSteps):
 
 
 
-#createDummyFile(90, 180, 5)
-plotRawDataFromFile('./geojson/dummy_bruteforcedCordinate_SeaAndTemp_Scale1.geojson')
+createDummyFile(90, 180, 5)
+plotRawDataFromFile('./geojson/dummy_bruteforcedCordinate_SeaAndTemp_Scale5.geojson')
 
 #bruteforceCoordiantesToFile(90, 180, 25, 0)
 #plotDataFromFile('./geojson/bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
