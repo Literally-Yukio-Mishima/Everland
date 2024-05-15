@@ -4,15 +4,14 @@ import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import statistics
-import pandas as pd
 import folium
 import time
 import re
 import xarray as xr
 import pandas as pd
 import numpy as np
-import json
 import csv
+
 
 
 # Changes in rain fall percentage are allowed in an intervall from -50% to 50%.
