@@ -16,7 +16,7 @@ import csv
 allowedDeviationPercentageOfRain = 50
 allowedDeviationPercentageOfTemp = 20
 allowedDeviationPercentageOfWind = 20
-seaLevelRise = 10 #0.5
+seaLevelRise = 0.5
 
 
 
@@ -93,16 +93,16 @@ def checkLivable(pLat, pLong):
     future_temperature_2m_max, future_precipitation_sum, future_wind_speed_10m_max = getFutureClimateData(pLat, pLong)
 
     percentrageIncreaseRain = calcPercentageIncrease(legacy_precipitation_sum, future_precipitation_sum)
-    print(f"Percentage Increse of rain: {percentrageIncreaseRain}% / {allowedDeviationPercentageOfRain}%")
+    #print(f"Percentage Increse of rain: {percentrageIncreaseRain}% / {allowedDeviationPercentageOfRain}%")
 
     percentrageIncreaseTemp = calcPercentageIncrease(legacy_temperature_2m_max, future_temperature_2m_max)
-    print(f"Percentage Increse of temp: {percentrageIncreaseTemp}% / {allowedDeviationPercentageOfTemp}%")
+    #print(f"Percentage Increse of temp: {percentrageIncreaseTemp}% / {allowedDeviationPercentageOfTemp}%")
 
     percentrageIncreaseWind = calcPercentageIncrease(legacy_wind_speed_10m_max, future_wind_speed_10m_max)
-    print(f"Percentage Increse of wind: {percentrageIncreaseWind}% / {allowedDeviationPercentageOfWind}%")
+    #print(f"Percentage Increse of wind: {percentrageIncreaseWind}% / {allowedDeviationPercentageOfWind}%")
 
     stillAboveSeaLevel, _ = isStillAboveSeaLevelCords(pLat, pLong)
-    print(f"Still above sea level: {stillAboveSeaLevel}")
+    #print(f"Still above sea level: {stillAboveSeaLevel}")
 
     if(percentrageIncreaseRain < (-1)*allowedDeviationPercentageOfRain or percentrageIncreaseRain > allowedDeviationPercentageOfRain):
         livable = False
@@ -113,7 +113,7 @@ def checkLivable(pLat, pLong):
     elif(not stillAboveSeaLevel):
         livable = False
 
-    print(f"Still livable: {livable}")
+    #print(f"Still livable: {livable}")
 
     return livable
 
@@ -360,11 +360,13 @@ def bruteforceCoordiantesToFile(pSteps, pSleep=1):
 
 
 
+# Bruteforce coordinates with a scale of 10.
+bruteforceCoordiantesToFile(10, 0.1)
 # Plots the elevation data from the given file.
-#plotDataFromFile('bruteforcedCordinateScale10.geojson')
+plotDataFromFile('bruteforcedCordinateScale10.geojson')
 
 # Plots the 10 biggest cities with population above 100000 people (using rain, wind, temp, sealevel)
-plotLivable(getCities(100000, 10))
+#plotLivable(getCities(100000, 50))
 
 # Plots the 10 biggest cities with population above 100000 people (using only sealevel)
 #plotOnlySeaLevel(getCities(100000, 10))
