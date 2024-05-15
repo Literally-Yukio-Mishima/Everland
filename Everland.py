@@ -291,13 +291,12 @@ def plotDataFromFile(pFile):
     m = folium.Map(location=[0, 0], zoom_start=2)
     folium.TileLayer('cartodbpositron').add_to(m)
 
-    #df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
     with open(pFile, 'r') as f:
         data = json.load(f)
 
     steps = int(re.search(r'\d+', pFile).group())
 
-    # Füge für jede Stadt einen Kreismarker hinzu
+    # Füge für jede Stadt einen Marker hinzu
     for i in range(len(data)):
         lat = data[i]['latitude']
         lon = data[i]['longitude']
@@ -326,10 +325,10 @@ def plotDataFromFile(pFile):
                     fill_opacity=0.5
                 ).add_to(m)
 
-
     # Speichere die Karte als HTML-Datei
-    m.save('world_cities_map.html')
+    m.save(f'worldFloodMapScale{scale}.html')
     m.show_in_browser()
+
 
 
 scale = 10
