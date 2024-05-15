@@ -139,9 +139,8 @@ def isStillAboveSeaLevelCords(pLat, pLong):
 
 
 
-def isStillAboveSeaLevelElevation(pElevation):
+def isStillAboveSeaLevelElevation(pElevation, seaLevelRise=0):
     return (pElevation - seaLevelRise > 1)
-
 
 
 # Do not use
@@ -255,11 +254,12 @@ def useGeoJson(pFile):
 def bruteforceElevation(pLat, pLong):
     url = f"https://api.open-elevation.com/api/v1/lookup?locations={pLat},{pLong}"
     response = requests.get(url).json()
+    try:
+        return response['results'][0]['elevation']
+    except:
+        raise Exception(response)
 
-    return response['results'][0]['elevation']
-
-
-def bruteforceCoordiantes(pSteps, pSleep=0):
+def bruteforceCoordiantes(pSteps, pSleep=0.3):
     df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
 
     index = 0
@@ -292,24 +292,30 @@ def bruteforceCoordiantes(pSteps, pSleep=0):
     for index, city in df.iterrows():
         lat = city['latitude']
         lon = city['longitude']
+        delta_lat = pSteps / 2
+        delta_lon = pSteps / 2
+        bounds = [
+            (lat - delta_lat, lon - delta_lon),
+            (lat + delta_lat, lon + delta_lon)
+        ]
 
         if(city['elevation'] != 0):
             if not(city['aboveSea']):
                 #print(f"Area [{lat / lon}] wont be good [{index+1}/{numberOfItems}]")
-                folium.CircleMarker(
-                    location=[lat, lon],
-                    radius=1,
-                    color='red',
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
                     fill=True,
-                    fill_color='red'
+                    fill_color='red',
+                    fill_opacity=0.5
                 ).add_to(m)
             else:
-                folium.CircleMarker(
-                    location=[lat, lon],
-                    radius=1,
-                    color='green',
+                folium.Rectangle(
+                    bounds=bounds,
+                    color=None,
                     fill=True,
-                    fill_color='green'
+                    fill_color='green',
+                    fill_opacity=0.5
                 ).add_to(m)
 
 
@@ -318,7 +324,7 @@ def bruteforceCoordiantes(pSteps, pSleep=0):
     m.show_in_browser()
 
 
-bruteforceCoordiantes(25)
+bruteforceCoordiantes(8)
 
 #plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
 #plot(getCities(10000, 10))
