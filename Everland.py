@@ -32,10 +32,12 @@ retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
 openmeteo = openmeteo_requests.Client(session = retry_session)
 
 
+
 # Calculates the median of the ten highest data points in a given data set.
 def getTopTenMedian(pData):
     topTen = sorted(pData, reverse=True)[:10]
     return statistics.median(topTen)
+
 
 
 # Queries the Open-Meteo Api for legacy (2020) weather data.
