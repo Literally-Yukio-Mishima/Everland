@@ -8,6 +8,8 @@ import pandas as pd
 import folium
 from folium.plugins import MarkerCluster
 import time
+import geopandas as gpd
+import re
 
 
 allowedDeviationPercentageOfRain = 50
@@ -259,20 +261,21 @@ def bruteforceElevation(pLat, pLong):
     except:
         raise Exception(response)
 
-def bruteforceCoordiantes(pSteps, pSleep=0.3):
+def bruteforceCoordiantesToFile(pSteps, pSleep=0.1):
     df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
 
+    maxSteps = (180 / pSteps) * (360 / pSteps)
     index = 0
     for i in range(-90, 90, pSteps): # latitude
         for j in range(-180, 180, pSteps): # longitude
-            print(f"Status: {index} / {(180 / pSteps) * (360 / pSteps)}")
-            
+            print(f"Status: {index} / {maxSteps} ({index/maxSteps*100})")
+
             elevation = bruteforceElevation(i, j)
             if(elevation == 0):
                 above = True
             else:
                 above = isStillAboveSeaLevelElevation(elevation)
-            
+
             df.loc[index] = [i, j, above, elevation]
             index +=1
             time.sleep(pSleep)
@@ -280,28 +283,33 @@ def bruteforceCoordiantes(pSteps, pSleep=0.3):
     print(df)
     jsonData = df.to_json(orient='records')
 
-    with open('data.json', 'w') as f:
+    with open(f"bruteforcedCordinateScale{pSteps}.geojson", 'w') as f:
         f.write(jsonData)
 
+
+def plotDataFromFile(pFile):
     m = folium.Map(location=[0, 0], zoom_start=2)
     folium.TileLayer('cartodbpositron').add_to(m)
 
-    numberOfItems = len(df)
+    #df = pd.DataFrame(columns=['latitude', 'longitude', 'aboveSea', 'elevation'])
+    with open(pFile, 'r') as f:
+        data = json.load(f)
+
+    steps = int(re.search(r'\d+', pFile).group())
 
     # Füge für jede Stadt einen Kreismarker hinzu
-    for index, city in df.iterrows():
-        lat = city['latitude']
-        lon = city['longitude']
-        delta_lat = pSteps / 2
-        delta_lon = pSteps / 2
+    for i in range(len(data)):
+        lat = data[i]['latitude']
+        lon = data[i]['longitude']
+        delta_lat = steps / 2
+        delta_lon = steps / 2
         bounds = [
             (lat - delta_lat, lon - delta_lon),
             (lat + delta_lat, lon + delta_lon)
         ]
 
-        if(city['elevation'] != 0):
-            if not(city['aboveSea']):
-                #print(f"Area [{lat / lon}] wont be good [{index+1}/{numberOfItems}]")
+        if(data[i]['elevation'] != 0):
+            if not(data[i]['aboveSea']):
                 folium.Rectangle(
                     bounds=bounds,
                     color=None,
@@ -324,7 +332,9 @@ def bruteforceCoordiantes(pSteps, pSleep=0.3):
     m.show_in_browser()
 
 
-bruteforceCoordiantes(8)
+scale = 10
+#bruteforceCoordiantesToFile(scale)
+plotDataFromFile(f'bruteforcedCordinateScale{scale}.geojson')
 
 #plot(useGeoJson('wrl_marker_presence_p_unhcr.geojson'))
 #plot(getCities(10000, 10))
