@@ -388,7 +388,7 @@ def bruteforceElevation(pLat, pLong):
 # Function to check if a given location is still above sea level
 def isStillAboveSeaLevelCordsLocal(pLat, pLong):
     # Construct the URL for the API request. IP here is a docker host on the local network.
-    url = f"http://10.0.12.227:5000/v1/test-dataset?locations={pLat},{pLong}"
+    url = f"http://localhost:5000/v1/test-dataset?locations={pLat},{pLong}"
     
     # Send a GET request to the API and parse the JSON response
     response = requests.get(url)
@@ -455,34 +455,36 @@ def bruteforceCoordiantesToFile(pMaxLat, pMaxLon, pSteps, pSleep=0.1):
     index = 0
 
     # Iterate through latitude and longitude coordinates
-    for lat in range(-pMaxLat, pMaxLat, pSteps):  # latitude
-        for lon in range(-pMaxLon, pMaxLon, pSteps):  # longitude
-            # Check if the location is above sea level and get elevation
-            above, elevation = isStillAboveSeaLevelCordsLocal(lat, lon)
-            temp = 0
-            tempChangeOK = False
+    for lat in range(-pMaxLat, pMaxLat):  # latitude
+        for i in range(10):
+            for lon in range(-pMaxLon, pMaxLon):  # longitude
+                for j in range(10):
+                    # Check if the location is above sea level and get elevation
+                    above, elevation = isStillAboveSeaLevelCordsLocal(lat, lon)
+                    temp = 0
+                    tempChangeOK = False
 
-            # If elevation is 0, consider it above sea level
-            if elevation == 0:
-                above = True
-            else:
-                # Check if temperature change is within the allowed range
-                tempChangeOK, temp = get_temperature_data(lat, lon)
+                    # If elevation is 0, consider it above sea level
+                    if elevation == 0:
+                        above = True
+                    else:
+                        # Check if temperature change is within the allowed range
+                        tempChangeOK, temp = get_temperature_data(lat, lon)
 
-            # Add data to the DataFrame
-            df.loc[index] = [lat, lon, above, elevation, tempChangeOK, temp]
+                    # Add data to the DataFrame
+                    df.loc[index] = [lat, lon, above, elevation, tempChangeOK, temp]
 
-            index += 1
+                    index += 1
 
-            # Pause for a while to avoid overwhelming the server
-            time.sleep(pSleep)
+                    # Pause for a while to avoid overwhelming the server
+                    time.sleep(pSleep)
 
-            if(index % 250 == 0):
-                print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
-                # Write intermediate results to a GeoJSON file
-                jsonData = df.to_json(orient='records')
-                with open(f"./geojson/bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
-                    f.write(jsonData)
+                    if(index % 250 == 0):
+                        print(f"Status: {index} / {maxSteps} ({round(index/maxSteps*100, 3)}%)")
+                        # Write intermediate results to a GeoJSON file
+                        jsonData = df.to_json(orient='records')
+                        with open(f"./geojson/bruteforcedCordinate_SeaAndTemp_Scale{pSteps}.geojson", 'w') as f:
+                            f.write(jsonData)
 
     # Write final results to a GeoJSON file
     jsonData = df.to_json(orient='records')
@@ -618,10 +620,10 @@ def createDummyFile(pMaxLat, pMaxLon, pSteps):
 
 
 
-createDummyFile(90, 180, 5)
-plotRawDataFromFile('./geojson/dummy_bruteforcedCordinate_SeaAndTemp_Scale5.geojson')
+#createDummyFile(90, 180, 5)
+#plotRawDataFromFile('./geojson/dummy_bruteforcedCordinate_SeaAndTemp_Scale5.geojson')
 
-#bruteforceCoordiantesToFile(90, 180, 25, 0)
+bruteforceCoordiantesToFile(90, 180, 0.1, 0)
 #plotDataFromFile('./geojson/bruteforcedCordinate_SeaAndTemp_Scale25.geojson')
 
 #lat, lon = getCordinates('Sydney')
